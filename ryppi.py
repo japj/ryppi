@@ -50,8 +50,9 @@ class NpmRegistry(object):
         tmpfile.write(response.read())
         tmpfile.close()
         tar = tarfile.open(tmpFilePath)
+        packageDir = tar.getmembers()[0].name.split('/')[0] # first entry of tar wil contain destination path
         tar.extractall(path = self.tmpPath)
-        srcPath = os.path.join(self.tmpPath, "package")
+        srcPath = os.path.join(self.tmpPath, packageDir)
         shutil.move(srcPath, destPath)
         return destPath
         
