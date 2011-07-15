@@ -22,22 +22,28 @@ class NpmRegistry(object):
         metadata = json.loads(data)
         return metadata
     
-    def cleanupTmp(self):
-        shutil.rmtree(self.tmpPath, ignore_errors=True)
+    def cleanupDir(self, cleanPath):
+        shutil.rmtree(cleanPath, ignore_errors=True)
 
     def saveAndExtractPackage(self, metaData):
         """
         """
-        self.cleanupTmp()
+        destPath = os.path.abspath(os.path.join(NpmRegistry.NPM_BASE_DIR, metaData["name"]))
+        url = metaData['dist']['tarball']
+        
+        print "installing %s into %s" % (url, destPath)
+        
+        self.cleanupDir(self.tmpPath)
+        self.cleanupDir(destPath)
+        
         try:
             os.makedirs(self.tmpPath)
         except OSError, e:
             if e.errno != errno.EEXIST:
                 raise
-        url = metaData['dist']['tarball']
+        
         filename = url.split("/")[-1] 
         tmpFilePath = os.path.join(NpmRegistry.NPM_BASE_DIR, NpmRegistry.NPM_TMP_DIR, filename)
-        print tmpFilePath
         response = urllib2.urlopen(url)
         tmpfile = open(tmpFilePath,'wb')
         tmpfile.write(response.read())
@@ -45,16 +51,32 @@ class NpmRegistry(object):
         tar = tarfile.open(tmpFilePath)
         tar.extractall(path = self.tmpPath)
         srcPath = os.path.join(self.tmpPath, "package")
-        destPath = os.path.join(NpmRegistry.NPM_BASE_DIR, metaData["name"])
         shutil.move(srcPath, destPath)
- 
+        return destPath
+        
+    def installDependencies(self, topDir):
+        """ recursive install dependencies
+        """
+        print 'going to install dependencies of %s' % topDir
+        curDir = os.getcwd()
+        os.chdir(topDir)
+        metaData = json.loads(open("package.json","r").read())        
+        for dep in metaData.get('dependencies', []):
+            metaDep = self.getMetaDataForPkg(dep) 
+            depPath = self.saveAndExtractPackage(metaDep)
+            self.installDependencies(depPath)
+        
+        # go back to original directory
+        os.chdir(curDir)
 
 def install(pkg):
     """ Installs pkg into ./node_modules
     """
     npm = NpmRegistry()
-    meta = npm.getMetaDataForPkg(pkg)
-    npm.saveAndExtractPackage(meta)
+    meta = npm.getMetaDataForPkg(pkg)    
+    destPath = npm.saveAndExtractPackage(meta)
+    npm.installDependencies(destPath)
     
     
 install("express")
+print 'done'
