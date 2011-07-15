@@ -4,6 +4,7 @@ import tarfile
 import os
 import errno
 import shutil
+import sys
 
 class NpmRegistry(object):
     NPM_BASE_DIR = r".\node_modules"
@@ -76,7 +77,30 @@ def install(pkg):
     meta = npm.getMetaDataForPkg(pkg)    
     destPath = npm.saveAndExtractPackage(meta)
     npm.installDependencies(destPath)
+    print 'install done'
     
-    
-install("express")
-print 'done'
+def deps():
+    npm = NpmRegistry()
+    npm.installDependencies(os.getcwd())
+    print 'deps done'
+
+def usage():
+    print """
+Usage:
+  ryppi deps          - Install dependencies from package.json file. (default)
+  ryppi install <pkg> - Install a package, and nest its deps.
+  ryppi rm <pkg>      - Remove a package, or all of them if no args.
+  ryppi ls            - Show installed packages.
+"""
+    sys.exit()
+
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        usage()
+        
+    if sys.argv[1] == "install":
+        if len(sys.argv) != 3:
+            usage()
+        install(sys.argv[2])
+    if sys.argv[1] == "deps":
+        deps()
