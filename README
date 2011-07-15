@@ -1,1 +1,9 @@
 python version of http://github.com/isaacs/ryp
+
+A really super scaled down featureless node package manager for node 0.4
+and higher.
+
+What results doesn't work yet, and doesn't handle all the different edge
+cases that npm will, but it does the 90% use case pretty ok.
+
+It requires python.
