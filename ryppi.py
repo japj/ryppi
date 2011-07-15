@@ -90,9 +90,10 @@ def usage():
 Usage:
   ryppi deps          - Install dependencies from package.json file. (default)
   ryppi install <pkg> - Install a package, and nest its deps.
-  ryppi rm <pkg>      - Remove a package, or all of them if no args.
-  ryppi ls            - Show installed packages.
 """
+    # TODO:
+    #  ryppi rm <pkg>      - Remove a package, or all of them if no args.
+    #  ryppi ls            - Show installed packages.
     sys.exit()
 
 if __name__ == '__main__':
@@ -103,5 +104,7 @@ if __name__ == '__main__':
         if len(sys.argv) != 3:
             usage()
         install(sys.argv[2])
-    if sys.argv[1] == "deps":
+    elif sys.argv[1] == "deps":
         deps()
+    else:
+        usage()
