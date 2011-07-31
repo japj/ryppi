@@ -1,10 +1,17 @@
-import urllib2
 import json
 import tarfile
 import os
 import errno
 import shutil
 import sys
+
+# work around python2/3 differences for urllib
+try:
+    import urllib2
+    doUrlOpen = urllib2.urlopen
+except ImportError as e:
+    import urllib.request
+    doUrlOpen = urllib.request.urlopen
 
 class NpmRegistry(object):
     NPM_BASE_DIR = r".\node_modules"
@@ -18,8 +25,10 @@ class NpmRegistry(object):
         """
         """
         url = "%s/%s/latest" % (NpmRegistry.NPM_BASE_URL, pkg)
-        response = urllib2.urlopen(url)
-        data = response.read()
+        response = doUrlOpen(url)
+        # we get empty data on python3??
+        data = response.read().decode('utf-8')       
+        #print("got data[%s]" % data)        
         metadata = json.loads(data)
         return metadata
     
@@ -32,20 +41,20 @@ class NpmRegistry(object):
         destPath = os.path.abspath(os.path.join(NpmRegistry.NPM_BASE_DIR, metaData["name"]))
         url = metaData['dist']['tarball']
         
-        print "installing %s into %s" % (url, destPath)
+        print("installing %s into %s" % (url, destPath))
         
         self.cleanupDir(self.tmpPath)
         self.cleanupDir(destPath)
         
         try:
             os.makedirs(self.tmpPath)
-        except OSError, e:
+        except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
         
         filename = url.split("/")[-1] 
         tmpFilePath = os.path.join(NpmRegistry.NPM_BASE_DIR, NpmRegistry.NPM_TMP_DIR, filename)
-        response = urllib2.urlopen(url)
+        response = doUrlOpen(url)
         tmpfile = open(tmpFilePath,'wb')
         tmpfile.write(response.read())
         tmpfile.close()
@@ -59,7 +68,7 @@ class NpmRegistry(object):
     def installDependencies(self, topDir):
         """ recursive install dependencies
         """
-        print 'going to install dependencies of %s' % topDir
+        print('going to install dependencies of %s' % topDir)
         curDir = os.getcwd()
         os.chdir(topDir)
         metaData = json.loads(open("package.json","r").read())        
@@ -78,19 +87,19 @@ def install(pkg):
     meta = npm.getMetaDataForPkg(pkg)    
     destPath = npm.saveAndExtractPackage(meta)
     npm.installDependencies(destPath)
-    print 'install done'
+    print('install done')
     
 def deps():
     npm = NpmRegistry()
     npm.installDependencies(os.getcwd())
-    print 'deps done'
+    print('deps done')
 
 def usage():
-    print """
+    print ("""
 Usage:
   ryppi deps          - Install dependencies from package.json file. (default)
   ryppi install <pkg> - Install a package, and nest its deps.
-"""
+""")
     # TODO:
     #  ryppi rm <pkg>      - Remove a package, or all of them if no args.
     #  ryppi ls            - Show installed packages.
