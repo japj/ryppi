@@ -63,6 +63,7 @@ class NpmRegistry(object):
         tar.extractall(path = self.tmpPath)
         srcPath = os.path.join(self.tmpPath, packageDir)
         shutil.move(srcPath, destPath)
+        self.cleanupDir(self.tmpPath)
         return destPath
 
     def installDependencies(self, topDir):
