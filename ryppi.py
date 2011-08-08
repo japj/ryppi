@@ -26,7 +26,6 @@ class NpmRegistry(object):
         """
         url = "%s/%s/latest" % (NpmRegistry.NPM_BASE_URL, pkg)
         response = doUrlOpen(url)
-        # we get empty data on python3??
         data = response.read().decode('utf-8')
         #print("got data[%s]" % data)
         metadata = json.loads(data)
@@ -119,22 +118,24 @@ def update():
 def usage():
     print ("""
 Usage:
-  ryppi deps          - Install dependencies from package.json file. (default)
-  ryppi install <pkg> - Install a package, and nest its deps.
+  ryppi deps                  - Install dependencies from package.json file. (default)
+  ryppi install <pkg> [<pkg>] - Install package(s), and nest its deps.
 """)
     # TODO:
-    #  ryppi rm <pkg>      - Remove a package, or all of them if no args.
-    #  ryppi ls            - Show installed packages.
+    #  ryppi rm <pkg>         - Remove a package, or all of them if no args.
+    #  ryppi ls               - Show installed packages.
     sys.exit()
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
+    params = len(sys.argv)
+    if params < 2:
         usage()
 
     if sys.argv[1] == "install":
-        if len(sys.argv) != 3:
+        if params < 3:
             usage()
-        install(sys.argv[2])
+        for i in range(2, params):
+            install(sys.argv[i])
     elif sys.argv[1] == "deps":
         deps()
     elif sys.argv[1] == "update":
