@@ -121,9 +121,6 @@ Usage:
   ryppi deps                  - Install dependencies from package.json file. (default)
   ryppi install <pkg> [<pkg>] - Install package(s), and nest its deps.
 """)
-    # TODO:
-    #  ryppi rm <pkg>         - Remove a package, or all of them if no args.
-    #  ryppi ls               - Show installed packages.
     sys.exit()
 
 if __name__ == '__main__':
