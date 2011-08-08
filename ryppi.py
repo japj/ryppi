@@ -11,7 +11,7 @@ try:
     doUrlOpen = urllib2.urlopen
 except ImportError as e:
     import urllib.request
-    doUrlOpen = urllib.request.urlopen
+    doUrlOpen = urllib.request.FancyURLopener().open
 
 class NpmRegistry(object):
     NPM_BASE_DIR = r".\node_modules"
