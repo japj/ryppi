@@ -13,6 +13,14 @@ except ImportError as e:
     import urllib.request
     doUrlOpen = urllib.request.FancyURLopener().open
 
+def my_nts(s, encoding, errors):
+    p = s.find(b"\0")
+    if p != -1:
+        s = s[:p]
+    if s == b"\x80":
+      return
+    return s.decode(encoding, errors)
+
 class NpmRegistry(object):
     NPM_BASE_DIR = r".\node_modules"
     NPM_BASE_URL = "http://registry.npmjs.org"
@@ -57,7 +65,11 @@ class NpmRegistry(object):
         tmpfile = open(tmpFilePath,'wb')
         tmpfile.write(response.read())
         tmpfile.close()
-        tar = tarfile.open(tmpFilePath)
+        try:
+            tar = tarfile.open(tmpFilePath)
+        except tarfile.ReadError:
+            tarfile.nts = my_nts
+            tar = tarfile.open(tmpFilePath)
         packageDir = tar.getmembers()[0].name.split('/')[0] # first entry of tar wil contain destination path
         tar.extractall(path = self.tmpPath)
         srcPath = os.path.join(self.tmpPath, packageDir)
