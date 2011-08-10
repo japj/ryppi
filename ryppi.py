@@ -121,7 +121,7 @@ def usage():
 Usage:
   python ryppi.py deps                  - Install dependencies from package.json file.
   python ryppi.py install <pkg> [<pkg>] - Install package(s), and it's/there dependencies.
-  python ryppi.py update                - Checks for different version in online repository, and updates as needed.
+  python ryppi.py update                - Checks for different version of packages in online repository, and updates as needed.
 Example:
   python ryppi.py install express socket.io mongolian underscore
 """)
