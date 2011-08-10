@@ -13,7 +13,7 @@ except ImportError as e:
     import urllib.request
     doUrlOpen = urllib.request.FancyURLopener().open
 
-# Replace for tarfile.nts method in python 3, as it breaks on b"\x80" in header
+# Replace for tarfile.nts method in python 3, as it breaks on b"\x80" in tar headers
 def my_nts(s, encoding, errors):
     p = s.find(b"\0")
     if p != -1:
@@ -38,7 +38,7 @@ class NpmRegistry(object):
         return metadata
 
     def cleanupDir(self, cleanPath):
-        shutil.rmtree(cleanPath, ignore_errors=True)
+        shutil.rmtree(cleanPath, ignore_errors = True)
 
     def saveAndExtractPackage(self, metaData):
         destPath = os.path.abspath(os.path.join(NpmRegistry.NPM_BASE_DIR, metaData['name']))
@@ -101,7 +101,7 @@ def install(pkg):
     meta = npm.getMetaDataForPkg(pkg)
     destPath = npm.saveAndExtractPackage(meta)
     npm.installDependencies(destPath)
-    print('Install done.')
+    print('All installations done.')
 
 def deps():
     npm = NpmRegistry()
