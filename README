@@ -1,9 +1,6 @@
-python version of http://github.com/isaacs/ryp
+Node.js package manager written in Python.
+Inspired by: https://github.com/isaacs/ryp
 
-A really super scaled down featureless node package manager for node 0.4
-and higher.
-
-What results doesn't work yet, and doesn't handle all the different edge
-cases that npm will, but it does the 90% use case pretty ok.
-
-It requires python.
+Main differences to npm:
+No version comparison, or compatibility check, only version matching to latest.
+Module dependencies are all installed in to the root modules directory, in order to avoid package redundancy.
