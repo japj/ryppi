@@ -70,9 +70,7 @@ def installDependencies(pkgDir):
     print('Going to install dependencies of %s ...' % pkgDir.split('\\')[-1])
     metaData = json.loads(open(os.path.join(pkgDir, 'package.json'), 'r').read())
     for dep in metaData.get('dependencies', []):
-        metaDep = getMetaDataForPkg(dep)
-        depPath = saveAndExtractPackage(metaDep)
-        installDependencies(depPath)
+        install(dep)
 
 def get_installed():
     dirs = os.listdir(modules_dir)
