@@ -22,71 +22,63 @@ def my_nts(s, encoding, errors):
       return
     return s.decode(encoding, errors)
 
-class NpmRegistry(object):
-    NPM_BASE_DIR = r".\node_modules"
-    NPM_BASE_URL = "http://registry.npmjs.org"
-    NPM_TMP_DIR = ".tmp"
+modules_dir = r'.\node_modules'
+tmp_dir = os.path.join(modules_dir, '.tmp')
 
-    def __init__(self):
-        self.tmpPath = os.path.join(NpmRegistry.NPM_BASE_DIR, NpmRegistry.NPM_TMP_DIR)
+def cleanupDir(cleanPath):
+    shutil.rmtree(cleanPath, ignore_errors = True)
 
-    def getMetaDataForPkg(self, pkg):
-        url = "%s/%s/latest" % (NpmRegistry.NPM_BASE_URL, pkg)
-        response = doUrlOpen(url)
-        data = response.read().decode('utf-8')
-        metadata = json.loads(data)
-        return metadata
+def getMetaDataForPkg(pkg):
+    url = '%s/%s/latest' % ('http://registry.npmjs.org', pkg)
+    response = doUrlOpen(url)
+    data = response.read().decode('utf-8')
+    metadata = json.loads(data)
+    return metadata
 
-    def cleanupDir(self, cleanPath):
-        shutil.rmtree(cleanPath, ignore_errors = True)
-
-    def saveAndExtractPackage(self, metaData):
-        destPath = os.path.abspath(os.path.join(NpmRegistry.NPM_BASE_DIR, metaData['name']))
-        url = metaData['dist']['tarball']
-        print('Installing %s into %s ...' % (url, destPath))
-        self.cleanupDir(self.tmpPath)
-        self.cleanupDir(destPath)
-        try:
-            os.makedirs(self.tmpPath)
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise
-        filename = url.split('/')[-1]
-        tmpFilePath = os.path.join(NpmRegistry.NPM_BASE_DIR, NpmRegistry.NPM_TMP_DIR, filename)
-        response = doUrlOpen(url)
-        tmpfile = open(tmpFilePath, 'wb')
-        tmpfile.write(response.read())
-        tmpfile.close()
-        try:
-            tar = tarfile.open(tmpFilePath)
-        except tarfile.ReadError:
-            tarfile.nts = my_nts
-            tar = tarfile.open(tmpFilePath)
-        packageDir = tar.getmembers()[0].name.split('/')[0] # First entry of tar wil contain destination path
-        tar.extractall(path = self.tmpPath)
-        tar.close()
-        srcPath = os.path.join(self.tmpPath, packageDir)
-        shutil.move(srcPath, destPath)
-        self.cleanupDir(self.tmpPath)
+def saveAndExtractPackage(metaData):
+    destPath = os.path.join(modules_dir, metaData['name'])
+    url = metaData['dist']['tarball']
+    filename = url.split('/')[-1]
+    tmpFilePath = os.path.join(tmp_dir, filename)
+    if os.path.isfile(tmpFilePath):
         return destPath
+    print('Installing %s into %s ...' % (url, destPath))
+    cleanupDir(destPath)
+    try:
+        os.makedirs(tmp_dir)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+    response = doUrlOpen(url)
+    tmpfile = open(tmpFilePath, 'wb')
+    tmpfile.write(response.read())
+    tmpfile.close()
+    try:
+        tar = tarfile.open(tmpFilePath)
+    except tarfile.ReadError:
+        tarfile.nts = my_nts
+        tar = tarfile.open(tmpFilePath)
+    packageDir = tar.getmembers()[0].name.split('/')[0] # First entry of tar wil contain destination path
+    tar.extractall(path = tmp_dir)
+    tar.close()
+    srcPath = os.path.join(tmp_dir, packageDir)
+    shutil.move(srcPath, destPath)
+    return destPath
 
-    def installDependencies(self, topDir):
-        # Recursive install dependencies
-        print('Going to install dependencies of %s ...' % topDir)
-        curDir = os.getcwd()
-        os.chdir(topDir)
-        metaData = json.loads(open('package.json', 'r').read())
-        for dep in metaData.get('dependencies', []):
-            metaDep = self.getMetaDataForPkg(dep)
-            depPath = self.saveAndExtractPackage(metaDep)
-            self.installDependencies(depPath)
-        os.chdir(curDir) # Go back to original directory
+def installDependencies(pkgDir):
+    # Recursive install dependencies
+    print('Going to install dependencies of %s ...' % pkgDir.split('\\')[-1])
+    metaData = json.loads(open(os.path.join(pkgDir, 'package.json'), 'r').read())
+    for dep in metaData.get('dependencies', []):
+        metaDep = getMetaDataForPkg(dep)
+        depPath = saveAndExtractPackage(metaDep)
+        installDependencies(depPath)
 
 def get_installed():
-    dirs = os.listdir(r".\node_modules")
+    dirs = os.listdir(modules_dir)
     meta = []
     for dir in dirs:
-        dir = os.path.join(r".\node_modules", dir, "package.json")
+        dir = os.path.join(modules_dir, dir, 'package.json')
         if not os.path.exists(dir):
             continue;
         f = open(dir, 'r')
@@ -96,23 +88,19 @@ def get_installed():
     return meta
 
 def install(pkg):
-    # Installs pkg into ./node_modules
-    npm = NpmRegistry()
-    meta = npm.getMetaDataForPkg(pkg)
-    destPath = npm.saveAndExtractPackage(meta)
-    npm.installDependencies(destPath)
-    print('All installations done.')
+    # Installs pkg(s) into .\node_modules
+    meta = getMetaDataForPkg(pkg)
+    destPath = saveAndExtractPackage(meta)
+    installDependencies(destPath)
 
 def deps():
-    npm = NpmRegistry()
-    npm.installDependencies(os.getcwd())
+    installDependencies(os.getcwd())
     print('Dependencies done.')
 
 def update():
-    npm = NpmRegistry()
     pkgs = get_installed()
     for pkg in pkgs:
-        meta = npm.getMetaDataForPkg(pkg['name'])
+        meta = getMetaDataForPkg(pkg['name'])
         if meta['version'] != pkg['version']:
             install(pkg['name'])
 
@@ -128,17 +116,20 @@ Example:
     sys.exit()
 
 if __name__ == '__main__':
+    cleanupDir(tmp_dir)
     params = len(sys.argv)
     if params < 2:
         usage()
-    if sys.argv[1] == "install":
+    if sys.argv[1] == 'install':
         if params < 3:
             usage()
         for i in range(2, params):
             install(sys.argv[i])
-    elif sys.argv[1] == "deps":
+        print('All installations done.')
+    elif sys.argv[1] == 'deps':
         deps()
-    elif sys.argv[1] == "update":
+    elif sys.argv[1] == 'update':
         update()
     else:
         usage()
+    cleanupDir(tmp_dir)
