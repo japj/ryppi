@@ -40,7 +40,7 @@ def saveAndExtractPackage(metaData):
     url = metaData['dist']['tarball']
     filename = url.split('/')[-1]
     tmpFilePath = os.path.join(tmp_dir, filename)
-    if os.path.isfile(tmpFilePath):
+    if os.path.isfile(tmpFilePath): # Make sure we don't re-download and reinstall anything
         return destPath
     print('Installing %s into %s ...' % (url, destPath))
     cleanupDir(destPath)
