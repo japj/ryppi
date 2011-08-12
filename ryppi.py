@@ -67,7 +67,7 @@ def saveAndExtractPackage(metaData):
 
 def installDependencies(pkgDir):
     # Recursive install dependencies
-    print('Going to install dependencies of %s ...' % pkgDir.split('\\')[-1])
+    print('Checking dependencies for %s ...' % pkgDir.split('\\')[-1])
     metaData = json.loads(open(os.path.join(pkgDir, 'package.json'), 'r').read())
     for dep in metaData.get('dependencies', []):
         install(dep)
