@@ -8,9 +8,11 @@ import sys
 # Work around python 2/3 differences for urllib
 try:
     import urllib2
+    HTTPError = urllib2.HTTPError
     doUrlOpen = urllib2.urlopen
 except ImportError as e:
     import urllib.request
+    HTTPError = urllib.HTTPError
     doUrlOpen = urllib.request.FancyURLopener().open
 
 # Replace for tarfile.nts method in python 3, as it breaks on b"\x80" in tar headers
@@ -30,7 +32,11 @@ def cleanupDir(cleanPath):
 
 def getMetaDataForPkg(pkg):
     url = '%s/%s/latest' % ('http://registry.npmjs.org', pkg)
-    response = doUrlOpen(url)
+    try:
+        response = doUrlOpen(url)
+    except HTTPError as e:
+        print('No module named "%s" in package registry! Aborting!' % pkg)
+        sys.exit()
     data = response.read().decode('utf-8')
     metadata = json.loads(data)
     return metadata
