@@ -129,7 +129,6 @@ if __name__ == '__main__':
             usage()
         for i in range(2, params):
             install(sys.argv[i])
-        print('All installations done.')
     elif sys.argv[1] == 'deps':
         deps()
     elif sys.argv[1] == 'update':
@@ -137,3 +136,4 @@ if __name__ == '__main__':
     else:
         usage()
     cleanupDir(tmp_dir)
+    print('All done.')
