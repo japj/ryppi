@@ -1,4 +1,7 @@
-import json
+try:
+    import json
+except ImportError:
+    import simplejson as json # needed on python 2.5
 import tarfile
 import os
 import errno
@@ -16,12 +19,16 @@ import sys
 # The below part tries to work around all issues and I have tested existing and
 # non existing packages for installation and errorhandling.
  
-# python 2.5 (not working yet to bininteger issue)
+# python 2.5 (ok, if you install simplejson by hand)
 # python 2.6 (ok)
 # python 2.7 (ok)
 # python 3.0 (ok)
 # python 3.1 (ok)
 # python 3.2 (ok)
+
+# also note that exception handling in different python versions is incompatible
+# i.e. except ImportError, e: will not work in python3+ and
+#      except ImportError as e: will not work in python2.5
 
 try:
     import urllib2
@@ -39,11 +46,12 @@ except ImportError:
     
 
 # Replace for tarfile.nts method in python 3, as it breaks on b"\x80" in tar headers
+# note: use bytes([0]) because python 2.5 does not know about b"\x80" syntax 
 def my_nts(s, encoding, errors):
-    p = s.find(b"\0")
+    p = s.find(bytes([0]))
     if p != -1:
         s = s[:p]
-    if s == b"\x80":
+    if s == bytes([0x80]):
       return
     return s.decode(encoding, errors)
 
@@ -82,9 +90,11 @@ def saveAndExtractPackage(metaData):
     cleanupDir(destPath)
     try:
         os.makedirs(tmp_dir)
-    except OSError as e:
-        if e.errno != errno.EEXIST:
-            raise
+    except OSError: #, e:
+        # assume we always get EEXIST due to python exception differences
+        pass                                   
+        #if e.errno != errno.EEXIST:
+        #    raise
     response = doUrlOpen(url)
     tmpfile = open(tmpFilePath, 'wb')
     tmpfile.write(response.read())
