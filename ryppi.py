@@ -6,14 +6,37 @@ import shutil
 import sys
 
 # Work around python 2/3 differences for urllib
+#
+# apparently urlib has undergone some different changes in all the different
+# python versions which means that depending on the version, urlopen is at
+# different places aswell as the different behaviour in errorhandling
+# (i.e. location of HTTPError and thrown exceptions during 'empty'/not found
+#  packages).
+#
+# The below part tries to work around all issues and I have tested existing and
+# non existing packages for installation and errorhandling.
+ 
+# python 2.5 (not working yet to bininteger issue)
+# python 2.6 (ok)
+# python 2.7 (ok)
+# python 3.0 (ok)
+# python 3.1 (ok)
+# python 3.2 (ok)
+
 try:
     import urllib2
     HTTPError = urllib2.HTTPError
     doUrlOpen = urllib2.urlopen
-except ImportError as e:
+except ImportError:
     import urllib.request
-    HTTPError = urllib.HTTPError
+    try:
+        import urllib.error
+        HTTPError = urllib.error.HTTPError
+    except ImportError:
+        HTTPError = urllib.HTTPError
     doUrlOpen = urllib.request.FancyURLopener().open
+    
+    
 
 # Replace for tarfile.nts method in python 3, as it breaks on b"\x80" in tar headers
 def my_nts(s, encoding, errors):
@@ -30,14 +53,21 @@ tmp_dir = os.path.join(modules_dir, '.tmp')
 def cleanupDir(cleanPath):
     shutil.rmtree(cleanPath, ignore_errors = True)
 
+def pkg_not_found_error(pkg):
+    print('No module named "%s" in package registry! Aborting!' % pkg)
+    sys.exit()    
+
 def getMetaDataForPkg(pkg):
     url = '%s/%s/latest' % ('http://registry.npmjs.org', pkg)
     try:
         response = doUrlOpen(url)
-    except HTTPError as e:
-        print('No module named "%s" in package registry! Aborting!' % pkg)
-        sys.exit()
-    data = response.read().decode('utf-8')
+        data = response.read().decode('utf-8')
+    except HTTPError:
+        pkg_not_found_error(pkg)
+    except ValueError:
+        # python 3.2 raises ValueError if reading empty data (not existing package)
+        pkg_not_found_error(pkg)
+    
     metadata = json.loads(data)
     return metadata
 
