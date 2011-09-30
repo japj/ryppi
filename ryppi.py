@@ -111,11 +111,11 @@ def saveAndExtractPackage(metaData):
     shutil.move(srcPath, destPath)
     return destPath
 
-def installDependencies(pkgDir):
+def installDependencies(pkgDir, dependencies='dependencies'):
     # Recursive install dependencies
-    print('Checking dependencies for %s ...' % pkgDir.split('\\')[-1])
+    print('Checking %s for %s ...' % (dependencies, pkgDir.split('\\')[-1]))
     metaData = json.loads(open(os.path.join(pkgDir, 'package.json'), 'r').read())
-    for dep in metaData.get('dependencies', []):
+    for dep in metaData.get(dependencies, []):
         install(dep)
 
 def get_installed():
@@ -141,6 +141,10 @@ def deps():
     installDependencies(os.getcwd())
     print('Dependencies done.')
 
+def devDeps():
+    installDependencies(os.getcwd(),'devDependencies')
+    print('Development dependencies done.')
+
 def update():
     pkgs = get_installed()
     for pkg in pkgs:
@@ -152,6 +156,7 @@ def usage():
     print ("""
 Usage:
   python ryppi.py deps                  - Install dependencies from package.json file.
+  python ryppi.py devDeps               - Install development dependencies from package.json file.
   python ryppi.py install <pkg> [<pkg>] - Install package(s), and it's/there dependencies.
   python ryppi.py update                - Checks for different version of packages in online repository, and updates as needed.
 Example:
@@ -171,6 +176,8 @@ if __name__ == '__main__':
             install(sys.argv[i])
     elif sys.argv[1] == 'deps':
         deps()
+    elif sys.argv[1] == 'devDeps':
+        devDeps()        
     elif sys.argv[1] == 'update':
         update()
     else:
