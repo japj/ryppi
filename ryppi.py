@@ -104,7 +104,12 @@ def saveAndExtractPackage(metaData):
     except tarfile.ReadError:
         tarfile.nts = my_nts
         tar = tarfile.open(tmpFilePath)
-    packageDir = tar.getmembers()[0].name.split('/')[0] # First entry of tar wil contain destination path
+    for item in tar.getmembers():
+        # Find the entry containing destination path
+        # apparently some (websocket-client) tarfiles contain multiple toplevel
+        # directories (PaxHeader)
+        if 'package.json' in item.name:
+            packageDir = item.name.split('/')[0] 
     tar.extractall(path = tmp_dir)
     tar.close()
     srcPath = os.path.join(tmp_dir, packageDir)
